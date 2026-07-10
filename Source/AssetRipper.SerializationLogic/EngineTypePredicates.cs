@@ -51,11 +51,11 @@ internal static class EngineTypePredicates
 		"UnityEngine.PropertyName",
 	];
 
-	public static bool IsSerializableUnityClass(ITypeDescriptor type)
+	public static bool IsSerializableUnityClass(ITypeDescriptor type, RuntimeContext? runtimeContext)
 	{
 		foreach (string unityClasses in serializableClasses)
 		{
-			if (type.IsAssignableTo(UnityEngineNamespace, unityClasses))
+			if (type.IsAssignableTo(UnityEngineNamespace, unityClasses, runtimeContext))
 			{
 				return true;
 			}
@@ -84,26 +84,9 @@ internal static class EngineTypePredicates
 		return false;
 	}
 
-	public static bool IsUnityEngineObject(ITypeDescriptor type)
+	public static bool IsUnityEngineObject(ITypeDescriptor type, RuntimeContext? runtimeContext)
 	{
-		//todo: somehow solve this elegantly. CheckedResolve() drops the [] of a type.
-		if (type.IsArray())
-		{
-			return false;
-		}
-
-		if (type is { Namespace: UnityEngineNamespace, Name: nameof(Object) })
-		{
-			return true;
-		}
-
-		TypeDefinition? typeDefinition = type.Resolve();
-		if (typeDefinition == null)
-		{
-			return false;
-		}
-
-		return typeDefinition.IsSubclassOf(UnityEngineNamespace, nameof(Object));
+		return type.IsAssignableTo(UnityEngineNamespace, nameof(Object), runtimeContext);
 	}
 
 	public static bool ShouldHaveHadSerializableAttribute(ITypeDescriptor type)

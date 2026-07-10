@@ -6,10 +6,11 @@ using AssetRipper.GUI.Web.Pages.Collections;
 using AssetRipper.GUI.Web.Pages.FailedFiles;
 using AssetRipper.GUI.Web.Pages.Resources;
 using AssetRipper.GUI.Web.Pages.Scenes;
+using AssetRipper.GUI.Web.Pages.Search;
 using AssetRipper.GUI.Web.Pages.Settings;
 using AssetRipper.GUI.Web.Paths;
 using AssetRipper.Import.Logging;
-using AssetRipper.Import.Utils;
+using AssetRipper.IO.Files;
 using AssetRipper.Web.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -77,7 +78,7 @@ public static class WebApplicationLauncher
 		{
 			if (string.IsNullOrEmpty(logPath))
 			{
-				logPath = ExecutingDirectory.Combine($"AssetRipper_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+				logPath = Path.Join(LocalFileSystem.ExecutingDirectory, $"AssetRipper_{DateTime.Now:yyyyMMdd_HHmmss}.log");
 				RotateLogs(logPath);
 			}
 			Logger.Add(new FileLogger(logPath));
@@ -231,6 +232,9 @@ public static class WebApplicationLauncher
 		app.MapGet(ResourceAPI.Urls.View, ResourceAPI.GetView).ProducesHtmlPage();
 		app.MapGet(ResourceAPI.Urls.Data, ResourceAPI.GetData)
 			.Produces<byte[]>(contentType: "application/octet-stream");
+
+		//Search
+		app.MapGet(SearchAPI.Urls.View, SearchAPI.GetView).ProducesHtmlPage();
 
 		//Scenes
 		app.MapGet(SceneAPI.Urls.View, SceneAPI.GetView).ProducesHtmlPage();

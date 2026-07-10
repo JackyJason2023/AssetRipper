@@ -1,5 +1,6 @@
 ﻿using AssetRipper.GUI.Web.Documentation;
 using AssetRipper.GUI.Web.Pages;
+using AssetRipper.GUI.Web.Pages.Search;
 using AssetRipper.GUI.Web.Paths;
 using AssetRipper.Web.Content;
 
@@ -98,6 +99,13 @@ public abstract class DefaultPage : HtmlPage
 				using (new Li(writer).End())
 				{
 					new A(writer).WithClass("dropdown-item").WithHref("/").Close(Localization.Home);
+				}
+				if (GameFileLoader.IsLoaded)
+				{
+					using (new Li(writer).End())
+					{
+						new A(writer).WithClass("dropdown-item").WithHref("/Search/View").Close(Localization.Search);
+					}
 				}
 				using (new Li(writer).End())
 				{
@@ -229,7 +237,7 @@ public abstract class DefaultPage : HtmlPage
 		{
 			using (new Div(writer).WithClass("container text-center").End())
 			{
-				writer.Write("&copy; 2025 - AssetRipper - ");
+				writer.Write("&copy; 2026 - AssetRipper - ");
 				new A(writer).WithHref("/Privacy").Close(Localization.Privacy);
 				writer.Write(" - ");
 				new A(writer).WithHref("/Licenses").Close(Localization.Licenses);

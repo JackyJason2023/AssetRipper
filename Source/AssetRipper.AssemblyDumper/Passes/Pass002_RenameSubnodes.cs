@@ -47,6 +47,9 @@ public static class Pass002_RenameSubnodes
 		{ "Float4" , Vector4FloatName },
 		{ "Fixed_bitset" , "FixedBitset" },
 		{ "GradientNEW" , "Gradient" },
+		{ "ProgramParameters" , "SerializedProgramParameters" },
+		{ "BufferBinding" , "BufferBindingParameter" },
+		{ "ConstantBufferParameter" , "ConstantBuffer" },
 	};
 
 	private static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> enumerable) where T : notnull
@@ -261,6 +264,15 @@ public static class Pass002_RenameSubnodes
 			for (int i = 10; i < 16; i++)
 			{
 				node.TryRenameSubNode($"m_Bytes_{i}_", $"m_Bytes_{i}");
+			}
+		}
+		else if (node.TypeName == "AudioSource")
+		{
+			if (node.TryGetSubNodeByName("m_Resource", out UniversalNode? resourceNode))
+			{
+				// https://github.com/AssetRipper/AssetRipper/issues/1881
+				resourceNode.TypeName = "PPtr_Object";
+				resourceNode.OriginalTypeName = "PPtr<Object>";// Need to ensure correct merging
 			}
 		}
 		else if (node.IsAssetServerCache(out UniversalNode? modifiedItemTypeNode))
@@ -641,6 +653,10 @@ public static class Pass002_RenameSubnodes
 		{
 			string suffix = node.Name.Substring(5);
 			node.Name = "m_Source" + suffix;
+		}
+		else if (node.Name == "m_Val")
+		{
+			node.Name = "m_Value";
 		}
 	}
 
