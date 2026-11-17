@@ -68,16 +68,21 @@ public sealed class AnimatorControllerProcessor : IAssetProcessor
 					MultipleReplacementAssetResolver resolver = new(cloneMap);
 					foreach (IUnityObjectBase originalAsset in claimedAssets)
 					{
-						IUnityObjectBase targetAsset = cloneMap.TryGetValue(originalAsset, out IUnityObjectBase? clonedAsset) ? clonedAsset : originalAsset;
-						targetAsset.CopyValues(originalAsset, new PPtrConverter(originalAsset.Collection, targetAsset.Collection, resolver));
+						if (cloneMap.TryGetValue(originalAsset, out IUnityObjectBase? clonedAsset))
+						{
+							clonedAsset.CopyValues(originalAsset, new PPtrConverter(originalAsset.Collection, clonedAsset.Collection, resolver));
+						}
 					}
 				}
 			}
 
 			foreach (IUnityObjectBase asset in controller.FetchEditorHierarchy().WhereNotNull())
 			{
-				Debug.Assert(asset.MainAsset is null);
-				asset.MainAsset = controller;
+				if (asset.MainAsset != controller)
+				{
+					Debug.Assert(asset.MainAsset is null);
+					asset.MainAsset = controller;
+				}
 			}
 		}
 	}

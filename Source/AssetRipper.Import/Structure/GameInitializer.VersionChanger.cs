@@ -10,7 +10,13 @@ using AssetRipper.SourceGenerated.Classes.ClassID_114;
 using AssetRipper.SourceGenerated.Classes.ClassID_2;
 using AssetRipper.SourceGenerated.Classes.ClassID_25;
 using AssetRipper.SourceGenerated.Classes.ClassID_28;
+using AssetRipper.SourceGenerated.Classes.ClassID_43;
+using AssetRipper.SourceGenerated.Extensions;
+using AssetRipper.SourceGenerated.Subclasses.ChannelInfo;
 using AssetRipper.SourceGenerated.Subclasses.ComponentPair;
+using AssetRipper.SourceGenerated.Subclasses.CompressedMesh;
+using AssetRipper.SourceGenerated.Subclasses.VertexData;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace AssetRipper.Import.Structure;
@@ -47,7 +53,7 @@ internal sealed partial record class GameInitializer
 					}
 
 					replacement.CopyValues(original);
-					HandleDifferingFields(original, replacement);
+					HandleDifferingFields(original, replacement, targetVersion);
 					collection.ReplaceAsset(replacement);
 				}
 
@@ -55,7 +61,7 @@ internal sealed partial record class GameInitializer
 			}
 		}
 
-		private static void HandleDifferingFields(IUnityObjectBase original, IUnityObjectBase replacement)
+		private static void HandleDifferingFields(IUnityObjectBase original, IUnityObjectBase replacement, UnityVersion targetVersion)
 		{
 			if (original is IRenderer renderer)
 			{
@@ -126,6 +132,62 @@ internal sealed partial record class GameInitializer
 						}
 					}
 				}
+			}
+			else if (original is IMesh mesh)
+			{
+				IMesh newMesh = (IMesh)replacement;
+				Debug.Assert(mesh.Collection == newMesh.Collection);
+
+				// Vertex data
+				if (mesh.VertexData.Data.Length > 0 && (targetVersion.LessThan(2018, 2) || mesh.Collection.Version.LessThan(2018, 2)))
+				{
+					// Todo: handle StreamData
+
+					VertexDataBlob originalBlob = VertexDataBlob.Create(mesh);
+					MeshData meshData = originalBlob.ToMeshData();
+					if (mesh.Has_Skin() && !newMesh.Has_Skin())
+					{
+						meshData = meshData with { Skin = mesh.Skin.Select(b => b.ToCommonClass()).ToArray() };
+					}
+					VertexDataBlob newBlob = VertexDataBlob.Create(meshData, targetVersion, newMesh.Collection.EndianType);
+					IVertexData vertexData = newMesh.VertexData;
+					vertexData.Data = newBlob.Data;
+					vertexData.VertexCount = (uint)newBlob.VertexCount;
+					if (vertexData.Has_Channels())
+					{
+						vertexData.Channels.Clear();
+						foreach (ChannelInfo channel in newBlob.Channels)
+						{
+							vertexData.Channels.AddNew().CopyValues(channel);
+						}
+					}
+					vertexData.SetStreams(newBlob.Streams);
+
+					if (newMesh.Has_MeshMetrics_0_() && !mesh.Has_MeshMetrics_0_())
+					{
+						newMesh.MeshMetrics_0_ = meshData.CalculateMeshMetric(0);
+						newMesh.MeshMetrics_1_ = meshData.CalculateMeshMetric(1);
+					}
+				}
+
+				// Compressed mesh data
+				{
+					ICompressedMesh originalCompressedMesh = mesh.CompressedMesh;
+					ICompressedMesh newCompressedMesh = newMesh.CompressedMesh;
+
+					if (originalCompressedMesh.Has_Colors() && newCompressedMesh.Has_FloatColors())
+					{
+						newCompressedMesh.SetFloatColors(originalCompressedMesh.GetFloatColors());
+					}
+					else if (originalCompressedMesh.Has_FloatColors() && newCompressedMesh.Has_Colors())
+					{
+						newCompressedMesh.SetFloatColors(originalCompressedMesh.GetFloatColors());
+					}
+				}
+
+				// Todo: handle other fields
+				newMesh.SetMeshOptimizationFlags(mesh.GetMeshOptimizationFlags());
+				newMesh.VertexData.CurrentChannels = mesh.VertexData.CurrentChannels;
 			}
 			else if (original is ITexture2D texture)
 			{

@@ -18,23 +18,23 @@ public class DiscontinuousRangeTests
 	private static readonly Range<float> MinToMax = new(float.MinValue, float.MaxValue);
 
 	[Test]
-	public void DisjointConstructionSucceedsAndHasCorrectCount()
+	public async Task DisjointConstructionSucceedsAndHasCorrectCount()
 	{
 		DiscontinuousRange<float> range = new(ZeroToThree, SevenToNine, FourToFive);
-		Assert.That(range, Has.Count.EqualTo(3));
+		await Assert.That(range).Count().IsEqualTo(3);
 	}
 
 	[Test]
-	public void OverlappingConstructionSucceedsAndHasCorrectCount()
+	public async Task OverlappingConstructionSucceedsAndHasCorrectCount()
 	{
 		DiscontinuousRange<float> range = new(ZeroToThree, SevenToNine, ZeroToEleven, FourToFive);
-		Assert.That(range, Has.Count.EqualTo(1));
+		await Assert.That(range).Count().IsEqualTo(1);
 	}
 
 	[Test]
-	public void EmptyHasCountZero()
+	public async Task EmptyHasCountZero()
 	{
-		Assert.That(DiscontinuousRange<float>.Empty.Count, Is.Zero);
+		await Assert.That(DiscontinuousRange<float>.Empty.Count).IsZero();
 	}
 
 	[Test]
@@ -54,6 +54,14 @@ public class DiscontinuousRangeTests
 	}
 
 	[Test]
+	public void MergingRangeAcrossMultipleExistingRangesKeepsTheFullUnion()
+	{
+		DiscontinuousRange<int> range = new(new Range<int>(0, 2), new Range<int>(4, 6), new Range<int>(1, 5));
+
+		AssertEqual(range, new DiscontinuousRange<int>(new Range<int>(0, 6)));
+	}
+
+	[Test]
 	public void UnionTest()
 	{
 		DiscontinuousRange<float> range1 = new(TwentyToMax, ZeroToTen);
@@ -68,6 +76,15 @@ public class DiscontinuousRangeTests
 		DiscontinuousRange<float> range1 = new(MinToZero);
 		DiscontinuousRange<float> expected = new(ZeroToMax);
 		AssertEqual(range1.Negate(float.MinValue, float.MaxValue), expected);
+	}
+
+	[Test]
+	public void NegationWithMultipleRangesIncludesGapsBetweenRanges()
+	{
+		DiscontinuousRange<int> range = new(new Range<int>(0, 2), new Range<int>(4, 6));
+		DiscontinuousRange<int> expected = new(new Range<int>(int.MinValue, 0), new Range<int>(2, 4), new Range<int>(6, int.MaxValue));
+
+		AssertEqual(range.Negate(int.MinValue, int.MaxValue), expected);
 	}
 
 	[Test]
@@ -112,6 +129,27 @@ public class DiscontinuousRangeTests
 	}
 
 	[Test]
+	public async Task SubtractKeepsRangesAfterOtherRangesAreExhausted()
+	{
+		DiscontinuousRange<int> range = new(new Range<int>(0, 10), new Range<int>(12, 14));
+		DiscontinuousRange<int> other = new(new Range<int>(2, 4));
+		DiscontinuousRange<int> expected = new(new Range<int>(0, 2), new Range<int>(4, 10), new Range<int>(12, 14));
+
+		await Assert.That(range.Subtract(other)).IsEqualTo(expected);
+	}
+
+	[Test]
+	public async Task DefaultRangeBehavesLikeEmpty()
+	{
+		DiscontinuousRange<int> range = default;
+
+		await Assert.That(range.Count).IsZero();
+		await Assert.That(range.Contains(0)).IsFalse();
+		await Assert.That(range.ToArray()).IsEmpty();
+		await Assert.That(range.Union(default)).IsEqualTo(DiscontinuousRange<int>.Empty);
+	}
+
+	[Test]
 	public void SubtractEndsTest()
 	{
 		DiscontinuousRange<float> range1 = new(ZeroToMax);
@@ -130,7 +168,7 @@ public class DiscontinuousRangeTests
 	}
 
 	/// <summary>
-	/// Because NUnit refuses to call ToString()
+	/// Includes the range contents in the failure message.
 	/// </summary>
 	/// <param name="actual"></param>
 	/// <param name="expected"></param>
@@ -138,7 +176,7 @@ public class DiscontinuousRangeTests
 	{
 		if (!actual.Equals(expected))
 		{
-			Assert.Fail($"Expected: {expected}\nBut was: {actual}");
+			Fail.Test($"Expected: {expected}\nBut was: {actual}");
 		}
 	}
 }

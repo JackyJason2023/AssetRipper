@@ -6,6 +6,7 @@ using AssetRipper.Export.PrimaryContent.DeletedAssets;
 using AssetRipper.Export.PrimaryContent.Models;
 using AssetRipper.Export.PrimaryContent.Scripts;
 using AssetRipper.Export.PrimaryContent.Textures;
+using AssetRipper.Import.AssetCreation;
 using AssetRipper.Import.Logging;
 using AssetRipper.Processing;
 using AssetRipper.Processing.Prefabs;
@@ -94,6 +95,7 @@ public sealed class PrimaryContentExporter
 		RegisterEmptyHandler<IPreloadData>();
 		RegisterEmptyHandler<IRuntimeAnimatorController>();
 		RegisterEmptyHandler<ISceneAsset>();
+		RegisterEmptyHandler<RawDataObject>();
 		RegisterEmptyHandler<SpriteInformationObject>();
 
 		GlbModelExporter modelExporter = new();
@@ -111,12 +113,16 @@ public sealed class PrimaryContentExporter
 		RegisterHandler<IFont>(BinaryAssetContentExtractor.Instance);
 		RegisterHandler<IMovieTexture>(BinaryAssetContentExtractor.Instance);
 		RegisterHandler<IVideoClip>(BinaryAssetContentExtractor.Instance);
+		if (settings.ExportSettings.ExportUnreadableAssets)
+		{
+			RegisterHandler<RawDataObject>(BinaryAssetContentExtractor.Instance);
+		}
 
 		RegisterHandler<IAudioClip>(new AudioContentExtractor());
 
 		RegisterHandler<IImageTexture>(new TextureExporter(settings.ExportSettings.ImageExportFormat, settings.ExportSettings.PreferOriginalTextureExtension));
 
-		RegisterHandler<IMonoScript>(new ScriptContentExtractor(gameData.AssemblyManager, settings.ExportSettings.ScriptLanguageVersion.ToCSharpLanguageVersion(gameData.ProjectVersion)));
+		RegisterHandler<IMonoScript>(new ScriptContentExtractor(gameData.AssemblyManager, settings.ExportSettings.ScriptLanguageVersion.ToCSharpLanguageVersion()));
 
 		// Deleted assets
 		// This must be the last handler

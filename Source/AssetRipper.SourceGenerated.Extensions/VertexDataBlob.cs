@@ -212,19 +212,37 @@ public readonly record struct VertexDataBlob(
 				{
 					if (meshData.HasSkin)
 					{
-						//todo
-
 						//kShaderChannelBlendWeight
-						channels.Add(CreateChannelInfoForFloatVector(0, 12, version));
+						channels.Add(CreateChannelInfoForFloatVector(4, 12, version));
+
+						foreach (BoneWeight4 boneWeight in meshData.Skin)
+						{
+							writer.Write(boneWeight.Weight0);
+							writer.Write(boneWeight.Weight1);
+							writer.Write(boneWeight.Weight2);
+							writer.Write(boneWeight.Weight3);
+						}
+						WriteAlignmentBytes(writer);
+
 						//kShaderChannelBlendIndices
-						channels.Add(CreateChannelInfoForFloatVector(0, 13, version));
+						channels.Add(CreateChannelInfoForIntegerVector(4, 13, version));
+
+						foreach (BoneWeight4 boneWeight in meshData.Skin)
+						{
+							// Encoded as UInt32
+							writer.Write(boneWeight.Index0);
+							writer.Write(boneWeight.Index1);
+							writer.Write(boneWeight.Index2);
+							writer.Write(boneWeight.Index3);
+						}
+						WriteAlignmentBytes(writer);
 					}
 					else
 					{
 						//kShaderChannelBlendWeight
 						channels.Add(CreateChannelInfoForFloatVector(0, 12, version));
 						//kShaderChannelBlendIndices
-						channels.Add(CreateChannelInfoForFloatVector(0, 13, version));
+						channels.Add(CreateChannelInfoForIntegerVector(0, 13, version));
 					}
 				}
 			}
@@ -363,6 +381,17 @@ public readonly record struct VertexDataBlob(
 			Dimension = dimension,
 			Offset = 0,
 			Format = (byte)MeshHelper.ToChannelFormat(MeshHelper.VertexFormat.kVertexFormatFloat, version),
+			Stream = streamIndex,
+		};
+	}
+
+	private static ChannelInfo CreateChannelInfoForIntegerVector(byte dimension, byte streamIndex, UnityVersion version)
+	{
+		return new ChannelInfo()
+		{
+			Dimension = dimension,
+			Offset = 0,
+			Format = (byte)MeshHelper.ToChannelFormat(MeshHelper.VertexFormat.kVertexFormatUInt32, version),
 			Stream = streamIndex,
 		};
 	}

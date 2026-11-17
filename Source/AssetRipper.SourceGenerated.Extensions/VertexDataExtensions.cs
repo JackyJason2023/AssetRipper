@@ -15,6 +15,35 @@ public static class VertexDataExtensions
 {
 	private const int VertexStreamAlign = 16;
 
+	extension(IVertexData instance)
+	{
+		public int CurrentChannels
+		{
+			get
+			{
+				if (instance.Has_CurrentChannels_Int32())
+				{
+					return instance.CurrentChannels_Int32;
+				}
+				else
+				{
+					return unchecked((int)instance.CurrentChannels_UInt32);
+				}
+			}
+			set
+			{
+				if (instance.Has_CurrentChannels_Int32())
+				{
+					instance.CurrentChannels_Int32 = value;
+				}
+				else
+				{
+					instance.CurrentChannels_UInt32 = unchecked((uint)value);
+				}
+			}
+		}
+	}
+
 	public static bool IsSet(this IVertexData instance, IStreamingInfo? streamingInfo)
 	{
 		return instance.VertexCount > 0 && (instance.Data.Length > 0 || streamingInfo is not null && streamingInfo.IsSet());
@@ -42,27 +71,37 @@ public static class VertexDataExtensions
 		}
 	}
 
-	public static uint GetCurrentChannels(this IVertexData instance)
+	public static void SetStreams(this IVertexData instance, IReadOnlyList<IStreamInfo> streams)
 	{
-		if (instance.Has_CurrentChannels_Int32())
+		if (instance.Has_Streams())
 		{
-			return unchecked((uint)instance.CurrentChannels_Int32);
+			instance.Streams.Clear();
+			foreach (IStreamInfo stream in streams)
+			{
+				instance.Streams.AddNew().CopyValues(stream);
+			}
+		}
+		else if (instance.Has_Streams_0_())
+		{
+			CopyStream(instance.Streams_0_, streams, 0);
+			CopyStream(instance.Streams_1_, streams, 1);
+			CopyStream(instance.Streams_2_, streams, 2);
+			CopyStream(instance.Streams_3_, streams, 3);
 		}
 		else
 		{
-			return instance.CurrentChannels_UInt32;
 		}
-	}
 
-	public static void SetCurrentChannels(this IVertexData instance, uint value)
-	{
-		if (instance.Has_CurrentChannels_Int32())
+		static void CopyStream(StreamInfo_3_5 target, IReadOnlyList<IStreamInfo> sourceList, int index)
 		{
-			instance.CurrentChannels_Int32 = unchecked((int)value);
-		}
-		else
-		{
-			instance.CurrentChannels_UInt32 = value;
+			if (index < sourceList.Count)
+			{
+				target.CopyValues(sourceList[index]);
+			}
+			else
+			{
+				target.Reset();
+			}
 		}
 	}
 
